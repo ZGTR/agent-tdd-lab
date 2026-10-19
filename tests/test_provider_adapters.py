@@ -106,7 +106,7 @@ def test_http_tool_decision_and_no_key_for_loopback(endpoint):
     "value",
     [
         b"invalid-json",
-        b"x" * 1_048_577,
+        pytest.param(b"x" * 1_048_577, id="oversized-response"),
         [],
         response(None),
         response("[]"),
