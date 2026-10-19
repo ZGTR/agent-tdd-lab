@@ -1,6 +1,6 @@
 # Production integration requirements and limits
 
-This repository is a tested reference library and offline lab, not certification that an arbitrary agent is safe to deploy. The generic core can be reused in an application; the bundled refund tool is explicitly a **local effect simulator**. No real refund is performed.
+This repository is a tested reference library and offline lab, not certification that an arbitrary agent is safe to deploy. Operational packaging and infrastructure are documented in [deployment.md](deployment.md). The generic core can be reused in an application; the bundled refund tool is explicitly a **local effect simulator**. No real refund is performed.
 
 ## What is enforced here
 

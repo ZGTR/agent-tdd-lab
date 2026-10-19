@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from threading import Event, Lock
 from typing import Protocol
 
+from agent_tdd.types import Status
+
 
 class Clock(Protocol):
     def time(self) -> float: ...
@@ -63,3 +65,10 @@ class RunContext:
     def __post_init__(self) -> None:
         if not self.request_id.strip() or len(self.request_id) > 200:
             raise ValueError("request_id must be nonempty and at most 200 characters")
+
+    def stop_reason(self) -> Status | None:
+        if self.cancelled.is_set():
+            return Status.CANCELLED
+        if self.budget.remaining_seconds() <= 0:
+            return Status.DEADLINE
+        return None

@@ -47,6 +47,7 @@ class Status(StrEnum):
     COMPLETED = "completed"
     REJECTED = "rejected"
     MODEL_ERROR = "model_error"
+    EXECUTION_ERROR = "execution_error"
     INVALID_DECISION = "invalid_decision"
     UNKNOWN_TOOL = "unknown_tool"
     STEP_LIMIT = "step_limit"

@@ -35,12 +35,7 @@ class Agent:
         def result(status: Status, output: JsonValue = None, code: str | None = None) -> RunResult:
             return RunResult(status, output, tuple(history), calls, code)
 
-        def stopped() -> Status | None:
-            if context.cancelled.is_set():
-                return Status.CANCELLED
-            if context.budget.remaining_seconds() <= 0:
-                return Status.DEADLINE
-            return None
+        stopped = context.stop_reason
 
         for _ in range(self._max_steps):
             status = stopped()

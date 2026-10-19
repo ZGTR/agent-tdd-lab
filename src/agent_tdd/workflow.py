@@ -43,10 +43,9 @@ class Workflow:
         calls = 0
         observations: list[Observation] = []
         for node in self._nodes:
-            if context.cancelled.is_set():
-                return RunResult(Status.CANCELLED, outputs, tuple(observations), calls)
-            if context.budget.remaining_seconds() <= 0:
-                return RunResult(Status.DEADLINE, outputs, tuple(observations), calls)
+            stop = context.stop_reason()
+            if stop is not None:
+                return RunResult(stop, outputs, tuple(observations), calls)
             handoff: JsonObject = {
                 "task": task,
                 "upstream": {name: outputs[name] for name in node.depends_on},
@@ -64,8 +63,7 @@ class Workflow:
                 )
             validate_json(result.output)
             outputs[node.name] = deepcopy(result.output)
-            if context.cancelled.is_set():
-                return RunResult(Status.CANCELLED, outputs, tuple(observations), calls)
-            if context.budget.remaining_seconds() <= 0:
-                return RunResult(Status.DEADLINE, outputs, tuple(observations), calls)
+            stop = context.stop_reason()
+            if stop is not None:
+                return RunResult(stop, outputs, tuple(observations), calls)
         return RunResult(Status.COMPLETED, outputs, tuple(observations), calls)

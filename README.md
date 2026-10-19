@@ -61,6 +61,21 @@ result = workflow.run({"topic": "your task"}, trusted_context)
 
 Each node receives `{"task": original_task, "upstream": {dependency: output}}`. Handoffs contain declared dependencies only. The same trusted context and atomic call budget are shared by every child agent. Cycles, duplicate names, missing dependencies, failed upstream steps, cancellation, and deadlines have explicit behavior. Execution is sequential in topological order: this is a small composable runner, not a parallel scheduler or durable workflow engine.
 
+## Operational runner
+
+```bash
+agent-tdd run workflow --telemetry --result-mode metadata --timeout 30 --max-model-calls 20
+agent-tdd run workflow --input-file task.json
+```
+
+The execution service constructs fresh agents per request, isolates input/output validators, reports metadata-only lifecycle events, and supports cooperative SIGTERM/SIGINT cancellation. Full result output can contain tool receipts; choose metadata mode for shared operational logs. See [extension architecture](docs/architecture.md).
+
+## Containers and IaC
+
+A pinned, non-root Docker image and offline Compose setup are included. The [AWS OpenTofu configuration](infra/aws) supplies an on-demand Fargate runner with separate IAM roles, digest-pinned images, a private network configuration, Step Functions execution deadlines/exit-code gates, and CloudWatch alarms. It uses an existing VPC and S3 state backend. Cloud resources are not applied by CI.
+
+See [deployment and operations](docs/deployment.md) for tested local commands, provider-mocked IaC checks, prerequisites, image promotion, rollback, and recovery. The refund SQLite simulator stays local; deployable application effects require an appropriate remote durable adapter.
+
 ## Architecture and principles
 
 ```mermaid
@@ -119,6 +134,8 @@ Outbox dispatch is **at least once**. An event may be delivered again after a su
 
 ## Documentation
 
+- [Extension architecture](docs/architecture.md)
+- [Deployment, IaC, and operations](docs/deployment.md)
 - [Initial verification record](docs/validation.md)
 - [Adapter contracts and extending any agent/framework](docs/adapters.md)
 - [Production integration and operational limits](docs/production.md)
