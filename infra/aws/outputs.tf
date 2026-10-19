@@ -6,3 +6,5 @@ output "execution_role_arn" { value = aws_iam_role.execution.arn }
 output "log_group_name" { value = aws_cloudwatch_log_group.worker.name }
 output "network_configuration" { value = local.network_configuration }
 output "state_machine_arn" { value = try(aws_sfn_state_machine.worker[0].arn, null) }
+output "evaluation_role_arn" { value = try(aws_iam_role.evaluation[0].arn, null) }
+output "account_id" { value = data.aws_caller_identity.current.account_id }

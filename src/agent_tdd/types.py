@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TypeAlias
+from typing import Any, TypeAlias, cast
 
 JsonValue: TypeAlias = "None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]"
 JsonObject: TypeAlias = dict[str, JsonValue]
@@ -25,6 +25,22 @@ def validate_json(value: JsonValue, *, _depth: int = 0) -> None:
         json.dumps(value, allow_nan=False)
     else:
         raise ValueError("unsupported JSON value")
+
+
+def parse_json(text: str | bytes) -> JsonValue:
+    """Decode JSON without duplicate keys, nonfinite values, or unbounded nesting."""
+
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON key")
+            result[key] = value
+        return result
+
+    value = cast(JsonValue, json.loads(text, object_pairs_hook=unique))
+    validate_json(value)
+    return value
 
 
 @dataclass(frozen=True)

@@ -98,3 +98,25 @@ variable "alarm_topic_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "bedrock_model_arns" {
+  description = "Explicit Bedrock model/profile resources; empty grants no inference access. Include profile underlying models when required."
+  type        = set(string)
+  default     = []
+  validation {
+    condition = alltrue([for arn in var.bedrock_model_arns :
+      can(regex("^arn:[a-z0-9-]+:bedrock:[a-z0-9-]+:[0-9]*:[a-z-]+/.+$", arn)) && !strcontains(arn, "*")
+    ])
+    error_message = "Supply explicit Bedrock resource ARNs without wildcards."
+  }
+}
+
+variable "github_repository" {
+  description = "Optional owner/repository for a separate CI evaluation role. Requires existing GitHub OIDC provider and main-only live-evaluation environment."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.github_repository == null ? true : can(regex("^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$", var.github_repository))
+    error_message = "Use owner/repository or null."
+  }
+}

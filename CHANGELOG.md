@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Add a framework-neutral evaluation service, strict versioned cases, injected executors/graders, repeat/split selection and baseline comparison before dispatch.
+- Fail releases on policy violations, quality/regression, per-run latency, execution/grader errors, missing runs, and configured request/token/estimated-cost limits.
+- Add retry-free OpenAI-compatible JSON-decision and optional AWS Bedrock Converse adapters with bounded requests, private credentials and attempted-request accounting.
+- Write private atomic JSON/HTML/JUnit metadata artifacts, with JUnit coverage of suite-wide gate failures.
+- Supply public read-only refund-routing cases, both provider configurations, generic integration documentation and a main-only manual live-evaluation workflow.
+- Add an optional hash-locked Bedrock container variant and selected-resource IAM/OIDC evaluation-role IaC. Live account access is not implied by offline HTTP/SDK/mocked tests.
+
 ## 1.1.0
 
 - Add an execution service with per-run factories, a configuration-snapshot registry, injected schema validation, and exception-isolated lifecycle observers.

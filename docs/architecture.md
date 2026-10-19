@@ -53,3 +53,11 @@ Observer exceptions increment `observer_failures` and do not change run success.
 No automatic retry decorator wraps a whole workflow or effectful step. Such a decorator can duplicate effects or hide ambiguous outcomes. Transient tool retries remain bounded by the existing harness, and remote effects must retain provider idempotency keys. Model adapters must count every actual provider request; internal invisible retries can defeat the shared call budget.
 
 The registry/execution service supports independent simultaneous runs. The DAG runner itself remains sequential. For parallel/durable orchestration, adapt an appropriate engine through Step and preserve context, schema, budget, and identity boundaries. OpenTofu and Step Functions implement deployment/lifecycle concerns outside the generic Python domain model.
+
+## Evaluation without framework coupling
+
+`evaluate()` is an application service depending on the `Executor`, `Grader`, and `Clock` protocols. The default `AgentExecutor` composes fresh injected models/tools through the existing execution service; a different workflow or framework replaces only the executor. `ExactGrader` is the initial strategy. Provider clients, lifecycle observers and artifact writers remain separate boundaries; cases never import plugins or code.
+
+Case expectations and scripted decisions are test-only. Only the task and prior observations cross the model port. `Sample` combines the existing `RunResult` with measured usage, so hard policy gates remain separate from a task-quality average. Baseline compatibility is checked before dispatch. Report destinations are checked before inference, and private atomic writes happen after evaluation. Source/prompt/protocol/config/case/grader identities are retained as metadata rather than copies of prompts or task data. Custom graders/executors must emit stable non-sensitive codes and measure all internal requests.
+
+See [evaluation.md](evaluation.md) for the executable setup and the explicit boundary between mocked adapter contracts and live model/account evidence.
