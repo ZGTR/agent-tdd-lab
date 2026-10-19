@@ -7,7 +7,7 @@ and reconciliation; a local transaction cannot atomically commit a remote paymen
 import json
 import math
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
@@ -42,8 +42,8 @@ class SqliteRefundStore:
         self._clock = clock
 
     @contextmanager
-    def _connect(self) -> Iterator[sqlite3.Connection]:
-        db = sqlite3.connect(self._path, timeout=1, isolation_level=None)
+    def _connect(self, timeout_seconds: float = 1) -> Iterator[sqlite3.Connection]:
+        db = sqlite3.connect(self._path, timeout=min(1, timeout_seconds), isolation_level=None)
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA foreign_keys=ON")
         try:
@@ -56,11 +56,20 @@ class SqliteRefundStore:
             db.close()
 
     @contextmanager
-    def _transaction(self) -> Iterator[sqlite3.Connection]:
-        with self._connect() as db:
+    def _transaction(
+        self,
+        *,
+        timeout_seconds: float = 1,
+        check_active: Callable[[], None] | None = None,
+    ) -> Iterator[sqlite3.Connection]:
+        with self._connect(timeout_seconds) as db:
             db.execute("BEGIN IMMEDIATE")
             try:
+                if check_active is not None:
+                    check_active()
                 yield db
+                if check_active is not None:
+                    check_active()
                 db.commit()
             except BaseException:
                 db.rollback()
@@ -100,9 +109,17 @@ class SqliteRefundStore:
                 return
             db.execute("INSERT INTO orders VALUES (?,?,?,?)", (tenant, order_id, cents, currency))
 
-    def commit(self, instruction: AuthorizedRefund) -> JsonObject:
+    def commit(
+        self,
+        instruction: AuthorizedRefund,
+        *,
+        timeout_seconds: float = 1,
+        check_active: Callable[[], None] | None = None,
+    ) -> JsonObject:
+        if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+            raise ToolError("execution_stopped")
         i = instruction
-        with self._transaction() as db:
+        with self._transaction(timeout_seconds=timeout_seconds, check_active=check_active) as db:
             # Check after acquiring the write lock; a queued transaction can outlive approval.
             if not math.isfinite(i.approved_until) or i.approved_until <= self._clock.time():
                 raise ToolError("approval_expired")

@@ -102,6 +102,7 @@ ruff format --check .
 mypy
 pytest --cov --cov-report=term-missing --cov-report=xml
 python -m build --no-isolation
+python scripts/verify_mutation.py
 ```
 
 Tests cover generic agents, custom tools, arbitrary JSON tasks, DAG handoffs, shared budgets, cancellation, malformed model output, approvals, tenant boundaries, crash/retry behavior, SQLite persistence, concurrent duplicates, and outbox replay. CI uses pinned actions and a Python matrix. No model calls are made by tests.

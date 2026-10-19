@@ -11,7 +11,7 @@ This repository is a tested reference library and offline lab, not certification
 - A deterministic policy that binds approval to tenant, actor, request, order, and expiry.
 - Tenant-scoped SQL lookups, database uniqueness for request and order, integer stored amounts.
 - Ledger write and outbox insert in one SQLite transaction, with rollback on outbox failure.
-- Expiry recheck after obtaining the write lock; lock contention is a bounded retryable error.
+- Expiry and execution checks after obtaining the write lock; an execution recheck before commit rolls back a stopped transaction. Lock waiting is capped by the caller timeout and one second.
 - Durable replay across fresh storage instances, with tested concurrency and idempotency conflicts.
 - At-least-once event delivery with explicit acknowledgment and retained failures.
 

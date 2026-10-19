@@ -187,3 +187,55 @@ def test_different_request_ids_racing_for_same_order_cannot_double_refund(store)
     assert sum(isinstance(result, dict) for result in results) == 1
     assert results.count("already_refunded") == 19
     assert len(store.pending(100)) == 1
+
+
+@pytest.mark.parametrize("stop", ["cancel", "deadline"])
+def test_cancel_or_deadline_while_waiting_for_lock_does_not_commit(
+    store, ctx, clock, approval, tmp_path, monkeypatch, stop
+):
+    from contextlib import contextmanager
+    from threading import Event
+
+    entered = Event()
+    original = store._connect
+
+    @contextmanager
+    def observed(timeout_seconds=1):
+        with original(timeout_seconds) as db:
+            entered.set()
+            yield db
+
+    monkeypatch.setattr(store, "_connect", observed)
+    tool = RefundTool(store, DemoApprovals(approval), RefundPolicy(), clock)
+    db = sqlite3.connect(tmp_path / "ledger.db", isolation_level=None)
+    db.execute("BEGIN IMMEDIATE")
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(tool.execute, {"order_id": "A1"}, ctx, timeout_seconds=1)
+        assert entered.wait(2)
+        if stop == "cancel":
+            ctx.cancelled.set()
+        else:
+            clock.now += 100
+        db.rollback()
+        db.close()
+        with pytest.raises(ToolError, match="execution_stopped"):
+            future.result(timeout=2)
+    assert store.pending(100) == []
+    with sqlite3.connect(tmp_path / "ledger.db") as db:
+        assert db.execute("SELECT count(*) FROM refunds").fetchone()[0] == 0
+
+
+def test_cancellation_before_commit_rolls_back_effect(store):
+    checks = 0
+
+    def guard():
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            raise ToolError("execution_stopped")
+
+    with pytest.raises(ToolError, match="execution_stopped"):
+        store.commit(instruction(), check_active=guard)
+    assert store.pending(100) == []
+    with pytest.raises(ToolError, match="execution_stopped"):
+        store.commit(instruction(), timeout_seconds=0)

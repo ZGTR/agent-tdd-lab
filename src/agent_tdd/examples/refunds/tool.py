@@ -27,7 +27,14 @@ class RefundTool:
             raise ToolError("invalid_arguments")
         approval = self._approvals.find(context, order_id)
         instruction = self._policy.authorize(context, order_id, approval, self._clock.time())
-        # Recheck after an approval lookup that may have performed I/O.
-        if context.cancelled.is_set() or context.budget.remaining_seconds() <= 0:
-            raise ToolError("execution_stopped")
-        return self._store.commit(instruction)
+
+        def check_active() -> None:
+            if context.cancelled.is_set() or context.budget.remaining_seconds() <= 0:
+                raise ToolError("execution_stopped")
+
+        check_active()
+        return self._store.commit(
+            instruction,
+            timeout_seconds=min(timeout_seconds, context.budget.remaining_seconds()),
+            check_active=check_active,
+        )

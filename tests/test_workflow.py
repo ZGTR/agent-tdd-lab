@@ -90,3 +90,18 @@ def test_step_cannot_mutate_another_steps_outputs(ctx):
     result = workflow.run(task, ctx)
     assert task == {"question": [1]}
     assert result.output["a"] == {"items": [1]}
+
+
+@pytest.mark.parametrize("stop", ["cancel", "deadline"])
+def test_final_plain_step_preserves_output_but_cannot_report_success_after_stop(ctx, clock, stop):
+    class SlowStep:
+        def run(self, task, context):
+            if stop == "cancel":
+                context.cancelled.set()
+            else:
+                clock.now += 100
+            return RunResult(Status.COMPLETED, {"receipt": "saved"})
+
+    result = Workflow([Node("slow", SlowStep())]).run(None, ctx)
+    assert result.status == (Status.CANCELLED if stop == "cancel" else Status.DEADLINE)
+    assert result.output == {"slow": {"receipt": "saved"}}
