@@ -12,3 +12,12 @@ This records checks actually performed, not a general production certification.
 - An adversarial review found final-step cancellation and queued-write cancellation gaps. Both were fixed and regression-tested, including output preservation and rollback.
 
 The public [GitHub CI run](https://github.com/ZGTR/agent-tdd-lab/actions/runs/39288676945) passed all six Linux/Windows jobs on Python 3.11–3.13, including lint, strict types, coverage, and package builds. Real provider integration, IAM, token/spend budgets, and semantic evaluations are application-specific work, as described in production.md.
+
+## Runtime and infrastructure extension — 19 October 2026
+
+- 95 Python tests passed with 100% measured statement and branch coverage; lint, formatting, strict types, mutation verification, and package builds passed.
+- The [extension CI run](https://github.com/ZGTR/agent-tdd-lab/actions/runs/39292616907) passed all eight jobs: the six Python/OS combinations, container build/smoke checks, and OpenTofu validation/tests.
+- The final container passed a local smoke check with a non-root user, read-only root, no networking, and dropped capabilities. Its named-volume refund replay retained one authoritative receipt without a duplicate effect event.
+- The checksum-pinned OpenTofu installer ran successfully. All nine AWS provider-mocked infrastructure tests passed, including bootstrap, image/runtime hardening, deadlines, and exit-code handling.
+
+No AWS resources were provisioned and no live IAM/network/provider integration was exercised. These checks establish the reusable foundation's tested behavior; application-specific adapters, model evaluations, cloud permissions, and recovery drills still require verification in the target environment. See [deployment and operations](deployment.md) for the executable runbook and boundaries.
