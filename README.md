@@ -1,5 +1,7 @@
 # Agent TDD Lab
 
+[![CI](https://github.com/ZGTR/agent-tdd-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ZGTR/agent-tdd-lab/actions/workflows/ci.yml)
+
 A framework-independent Python reference for testing agents, harnesses, tools, and multi-agent workflows. Clone it, run it without credentials, and replace the model/tool adapters for your application.
 
 **Status:** production-oriented reference implementation with a tested local SQLite effect simulator. It does not send money, authenticate HTTP callers, guarantee model quality, or provide a distributed agent runtime. Read [production integration requirements](docs/production.md) before enabling external effects.

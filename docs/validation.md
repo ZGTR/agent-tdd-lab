@@ -11,4 +11,4 @@ This records checks actually performed, not a general production certification.
 - Wheel and source distribution built successfully; an isolated wheel installation ran both CLI examples without runtime dependencies or API credentials.
 - An adversarial review found final-step cancellation and queued-write cancellation gaps. Both were fixed and regression-tested, including output preservation and rollback.
 
-The GitHub Actions workflow defines Linux/Windows jobs on Python 3.11–3.13. Hosted CI and Windows execution have not yet been observed; they require a published repository and an available runner. Real provider integration, IAM, token/spend budgets, and semantic evaluations are application-specific work, as described in production.md.
+The public [GitHub CI run](https://github.com/ZGTR/agent-tdd-lab/actions/runs/39288676945) passed all six Linux/Windows jobs on Python 3.11–3.13, including lint, strict types, coverage, and package builds. Real provider integration, IAM, token/spend budgets, and semantic evaluations are application-specific work, as described in production.md.
