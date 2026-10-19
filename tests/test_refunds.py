@@ -30,11 +30,13 @@ def instruction():
     return AuthorizedRefund("acme", "alice", "req-1", "A1", 1100)
 
 
-def test_approval_required_and_no_effect(store, ctx, clock):
+def test_approval_required_and_no_effect(store, ctx, clock, tmp_path):
     tool = RefundTool(store, DemoApprovals(None), RefundPolicy(), clock)
     with pytest.raises(ToolError, match="approval_required"):
         tool.execute({"order_id": "A1"}, ctx, timeout_seconds=5)
     assert store.pending(100) == []
+    with sqlite3.connect(tmp_path / "ledger.db") as db:
+        assert db.execute("SELECT count(*) FROM refunds").fetchone()[0] == 0
 
 
 @pytest.mark.parametrize(
