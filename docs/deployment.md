@@ -31,6 +31,17 @@ docker build --secret id=proxy_ca,src=/path/to/combined-ca.pem -t agent-tdd:loca
 
 The optional secret is mounted only during dependency installation and is not copied into the image. Keep TLS verification enabled. For provider calls at runtime, mount the appropriate trust bundle and inject secrets through your platform's secret mechanism, not through image layers or IaC variables committed to Git.
 
+## Evaluation images
+
+The default image includes the generic runner, public example cases under `/opt/agent-tdd/evals`, and the standard-library OpenAI-compatible adapter. For Bedrock, build the optional hash-locked SDK image:
+
+```bash
+docker build --platform linux/amd64 --build-arg WITH_BEDROCK=true -t agent-tdd:bedrock .
+python scripts/check_container.py agent-tdd:bedrock
+```
+
+Both image variants pass the same offline/replay/evaluation smoke checks. They do not contain provider credentials. Mount a writable private artifact directory/volume and read-only trusted provider configuration when running evaluations; a read-only root without a report volume is rejected by the destination preflight before inference. A later disk or permissions failure can still occur after preflight. Use SDK workload identity or your platform's secrets injection for actual inference, and verify live IAM/network behavior before release. See [evaluation.md](evaluation.md) for cases, reports, gates, and the separate manual CI workflow. The IaC's default task still runs the credential-free workflow, not an evaluation or a refund service.
+
 ## AWS architecture
 
 ```mermaid
@@ -45,7 +56,7 @@ flowchart LR
 
 `infra/aws` is an OpenTofu root configuration using the locked AWS provider. It creates ECR, an ECS cluster, task/execution/orchestration roles, a no-ingress security group, CloudWatch logs, and—after an image digest is supplied—a Fargate task definition, Step Functions runner, and failure/timeout alarms. It never starts a task as part of apply.
 
-The execution role can pull only this repository's images and append only this log group's streams. ECR authentication requires the `GetAuthorizationToken` wildcard resource; image retrieval remains repository-scoped. The application task role has no permissions by default. Add application-specific grants to that role in your own reviewed infrastructure. The orchestration role can run the fixed task revision, pass the two fixed ECS roles, and monitor/stop this cluster's tasks.
+The execution role can pull only this repository's images and append only this log group's streams. ECR authentication requires the `GetAuthorizationToken` wildcard resource; image retrieval remains repository-scoped. The application task role has no permissions by default. Optional `bedrock_model_arns` grants only `bedrock:InvokeModel` on the explicit selected model/profile ARNs. Include underlying model resources when required by an inference profile. Other application grants remain your own reviewed infrastructure. Optional `github_repository` creates a separate inference-only CI role bound to the repository's `live-evaluation` environment and an existing account GitHub OIDC provider. Restrict that environment to `main` before configuring its role variable; the [setup runbook](evaluation.md#trusted-manual-ci) verifies the branch restriction. The orchestration role can run the fixed task revision, pass the two fixed ECS roles, and monitor/stop this cluster's tasks.
 
 No request-supplied command overrides are accepted by the state machine. Change the trusted `command` IaC variable or ship a new application composition root in your image. There are no automatic effect retries. The managed runner checks container exit code zero; a stopped task alone is not treated as application success.
 

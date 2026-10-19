@@ -106,3 +106,39 @@ run "nonzero_exit_is_not_success" {
     error_message = "A stopped task is not a successful application run without exit code zero."
   }
 }
+
+run "inference_is_opt_in" {
+  command = plan
+  assert {
+    condition     = length(aws_iam_role_policy.task_bedrock) == 0 && length(aws_iam_role.evaluation) == 0
+    error_message = "Default workers and CI must have no inference permission."
+  }
+}
+
+run "selected_models_and_ci_identity_only" {
+  command = plan
+  variables {
+    bedrock_model_arns = ["arn:aws:bedrock:us-east-1::foundation-model/example.model-v1"]
+    github_repository  = "ZGTR/agent-tdd-lab"
+  }
+  assert {
+    condition     = jsondecode(aws_iam_role_policy.evaluation[0].policy).Statement[0].Action == ["bedrock:InvokeModel"] && jsondecode(aws_iam_role_policy.evaluation[0].policy).Statement[0].Resource == ["arn:aws:bedrock:us-east-1::foundation-model/example.model-v1"]
+    error_message = "CI may invoke only the selected model resources."
+  }
+  assert {
+    condition     = jsondecode(aws_iam_role.evaluation[0].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:ZGTR/agent-tdd-lab:environment:live-evaluation"
+    error_message = "OIDC trust must bind the exact repository and protected evaluation environment."
+  }
+}
+
+run "reject_wildcard_inference" {
+  command = plan
+  variables { bedrock_model_arns = ["arn:aws:bedrock:us-east-1::foundation-model/*"] }
+  expect_failures = [var.bedrock_model_arns]
+}
+
+run "reject_ci_role_without_model_access" {
+  command = plan
+  variables { github_repository = "ZGTR/agent-tdd-lab" }
+  expect_failures = [aws_iam_role.evaluation]
+}

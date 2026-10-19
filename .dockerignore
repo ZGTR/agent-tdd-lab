@@ -7,3 +7,9 @@
 !LICENSE
 !src/
 !src/**
+!requirements-bedrock.txt
+!evals/
+!evals/refund-routing.json
+!evals/providers/
+!evals/providers/openai.example.json
+!evals/providers/bedrock.example.json

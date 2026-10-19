@@ -11,6 +11,7 @@ from uuid import uuid4
 from agent_tdd.adapters.local import SystemClock
 from agent_tdd.composition import default_registry, refund_demo, research_demo
 from agent_tdd.context import Identity
+from agent_tdd.evaluation import cli as evaluation_cli
 from agent_tdd.events import EventBus, OutboxDispatcher
 from agent_tdd.runtime import ExecutionService, RunSettings
 from agent_tdd.signals import cancellation_signals
@@ -22,6 +23,7 @@ from agent_tdd.views import render_event, render_result, render_summary
 def main() -> int:
     parser = argparse.ArgumentParser(description="Offline agent TDD reference examples")
     sub = parser.add_subparsers(dest="command", required=True)
+    evaluation_cli.add_parser(sub)
     refund = sub.add_parser("refund", help="local SQLite refund simulator; never sends money")
     refund.add_argument("--db", type=Path, default=Path("agent-tdd.db"))
     refund.add_argument("--approve", action="store_true", help="seed a demo-only approval")
@@ -41,6 +43,8 @@ def main() -> int:
         "--telemetry", action="store_true", help="emit metadata-only lifecycle JSON to stderr"
     )
     args = parser.parse_args()
+    if args.command == "evaluate":
+        return evaluation_cli.run(args)
     if args.command == "run":
         try:
             task = {}

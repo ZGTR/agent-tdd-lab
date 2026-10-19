@@ -70,6 +70,15 @@ agent-tdd run workflow --input-file task.json
 
 The execution service constructs fresh agents per request, isolates input/output validators, reports metadata-only lifecycle events, and supports cooperative SIGTERM/SIGINT cancellation. Full result output can contain tool receipts; choose metadata mode for shared operational logs. See [extension architecture](docs/architecture.md).
 
+## Versioned evaluations and release gates
+
+```bash
+uv run --frozen agent-tdd evaluate --cases evals/refund-routing.json \
+  --provider scripted --report artifacts/smoke.json --repeats 3
+```
+
+This supplied command writes private JSON/HTML/JUnit reports and returns a failing exit code for failed gates. The same cases run through OpenAI-compatible endpoints or AWS Bedrock Converse; use `uv sync --frozen --extra bedrock` for the optional SDK. See [evaluation setup](docs/evaluation.md) for real provider configuration, baseline comparisons, generic executor/grader extension points, and main-only manual CI. Public routing fixtures and scripted passes demonstrate plumbing; they are not held-out quality evidence or permission to perform a refund.
+
 ## Containers and IaC
 
 A pinned, non-root Docker image and offline Compose setup are included. The [AWS OpenTofu configuration](infra/aws) supplies an on-demand Fargate runner with separate IAM roles, digest-pinned images, a private network configuration, Step Functions execution deadlines/exit-code gates, and CloudWatch alarms. It uses an existing VPC and S3 state backend. Cloud resources are not applied by CI.
@@ -113,7 +122,7 @@ There is deliberately no HTTP server, frontend, broker, plugin loader, or mandat
 3. Implement the smallest change; run the affected tests.
 4. Remove the guard temporarily and prove that the test fails, then restore it.
 5. Run the full suite, lint, type checking, coverage, and packaging checks.
-6. Add a separate versioned live-model evaluation set. Offline tests establish harness behavior, not model intelligence.
+6. Run the supplied evaluation gate with your live provider and reviewed application cases. Offline tests establish harness behavior, not model intelligence.
 
 ```bash
 ruff check .

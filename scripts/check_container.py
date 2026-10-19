@@ -54,6 +54,28 @@ try:
         raise SystemExit("Repeated request did not return the same result")
     if len(first.stderr.splitlines()) != 1 or second.stderr.strip():
         raise SystemExit("Replay produced a second effect event or first event was missing")
+    for name in ("baseline", "candidate"):
+        evaluation = [
+            *base,
+            "--mount",
+            f"type=volume,source={volume},target=/data",
+            args.image,
+            "evaluate",
+            "--cases",
+            "/opt/agent-tdd/evals/refund-routing.json",
+            "--provider",
+            "scripted",
+            "--repeats",
+            "3",
+            "--report",
+            f"/data/{name}.json",
+        ]
+        if name == "candidate":
+            evaluation += ["--baseline", "/data/baseline.json"]
+        completed = subprocess.run(evaluation, capture_output=True, text=True, check=True)
+        summary = json.loads(completed.stdout)
+        if not summary["passed"] or summary["summary"]["requests"] != 18:
+            raise SystemExit("Container evaluation or baseline gate did not pass")
 finally:
     subprocess.run(["docker", "volume", "rm", volume], capture_output=True, check=True)
-print("Container verified: non-root, read-only, offline; durable refund replay is idempotent")
+print("Container verified: non-root, read-only, offline; durable replay and evaluation gates pass")

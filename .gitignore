@@ -21,3 +21,5 @@ terraform.tfvars
 crash.log
 backend.s3.hcl
 .coverage.*
+artifacts/
+*.local.json

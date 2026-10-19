@@ -21,3 +21,13 @@ The public [GitHub CI run](https://github.com/ZGTR/agent-tdd-lab/actions/runs/39
 - The checksum-pinned OpenTofu installer ran successfully. All nine AWS provider-mocked infrastructure tests passed, including bootstrap, image/runtime hardening, deadlines, and exit-code handling.
 
 No AWS resources were provisioned and no live IAM/network/provider integration was exercised. These checks establish the reusable foundation's tested behavior; application-specific adapters, model evaluations, cloud permissions, and recovery drills still require verification in the target environment. See [deployment and operations](deployment.md) for the executable runbook and boundaries.
+
+## Evaluation release — 19 October 2026
+
+- 193 tests passed on Linux with Python 3.11, 3.12 and 3.13. Python 3.12 measured 100% statement/branch coverage. Ruff, strict mypy, policy mutation verification and wheel/source builds passed.
+- Local HTTP contract tests exercised real socket requests, malformed responses, redirects, usage gaps and HTTP failures. AWS SDK Stubber verified Converse parameters, timeout configuration and disabled inference retries without contacting AWS.
+- Both default and optional Bedrock images passed non-root/read-only/offline smoke checks, durable refund replay, and repeated evaluation/baseline artifact gates. The Bedrock SDK imported successfully in its optional image without network access.
+- OpenTofu format/validate and all 13 provider-mocked tests passed, including opt-in selected-model IAM and repository/environment-specific OIDC trust.
+- Independent adversarial review found and closed report/input sibling collisions, invalid repository-owner validation, and inaccurate per-request token/cost wording. Report destinations are checked before inference; cost/token gates apply after each executor/case run.
+
+The public fixture partition is illustrative. No live model-quality or AWS-account integration evidence was produced: provider credentials were not configured. GitHub environment administration returned HTTP 403; the main-only environment/credential setup is documented and scripted, not claimed as provisioned. A live application release still needs its actual provider report, target-account contract checks and recovery evidence. See [evaluation setup](evaluation.md).
