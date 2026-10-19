@@ -25,6 +25,8 @@ agent-tdd refund --db demo.db --approve  # same receipt; no second effect/event
 
 For reproducible development dependencies, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and use `uv sync --frozen` followed by `uv run --frozen pytest`. `uv.lock` pins the complete dependency graph. The pip path is convenient; the frozen uv path is the reproducible CI path.
 
+If migrating from the original single-file lab, do not keep an `agent_tdd.py` file inside the clone: that filename can shadow the installed `agent_tdd` package.
+
 ## Use your own agent
 
 The core does not know about refunds. Models return `Decision` objects; tools implement a protocol; a composition root injects both. A task and output can be any supported JSON value. No base-class inheritance or framework is required.
@@ -115,6 +117,7 @@ Outbox dispatch is **at least once**. An event may be delivered again after a su
 
 ## Documentation
 
+- [Initial verification record](docs/validation.md)
 - [Adapter contracts and extending any agent/framework](docs/adapters.md)
 - [Production integration and operational limits](docs/production.md)
 - [Tutorial: Reliable TDD for Agents](https://mohammadshaker.com/en/blog/reliable-agent-tdd-highest-roi)
