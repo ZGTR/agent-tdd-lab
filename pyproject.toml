@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-tdd-lab"
+version = "1.0.0"
+description = "Offline agent TDD reference: bounded harness, DI, durable SQLite effects and outbox."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Mohammad Shaker"}]
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest==8.3.5", "pytest-cov==6.0.0", "ruff==0.11.13",
+  "mypy==1.15.0", "build==1.2.2.post1", "hatchling==1.27.0",
+]
+
+[project.scripts]
+agent-tdd = "agent_tdd.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_tdd"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+[tool.coverage.run]
+source = ["agent_tdd"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
