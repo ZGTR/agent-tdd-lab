@@ -12,3 +12,12 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+.tofu/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+crash.log
+backend.s3.hcl
+.coverage.*

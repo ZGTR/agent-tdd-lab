@@ -1,0 +1,6 @@
+# Use an existing, private, encrypted, versioned state bucket and operator role.
+bucket       = "your-existing-state-bucket"
+key          = "agent-tdd/production.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true

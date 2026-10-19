@@ -13,3 +13,10 @@ def render_result(result: RunResult) -> str:
 
 def render_event(event: Event) -> str:
     return json.dumps(asdict(event), sort_keys=True, allow_nan=False)
+
+
+def render_summary(result: RunResult) -> str:
+    """Safe operational summary excludes tasks, outputs, tool receipts, and arbitrary error text."""
+    return json.dumps(
+        {"status": result.status.value, "model_calls": result.model_calls}, sort_keys=True
+    )

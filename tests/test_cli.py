@@ -34,3 +34,82 @@ def test_installed_cli(tmp_path):
         result = subprocess.run(command, capture_output=True, text=True)
         assert result.returncode == status, result.stderr
         assert "status" in json.loads(result.stdout)
+
+
+def test_production_runner_cli_and_private_telemetry(tmp_path):
+    task = tmp_path / "task.json"
+    task.write_text('{"secret":"do-not-log"}')
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent_tdd",
+            "run",
+            "workflow",
+            "--input-file",
+            str(task),
+            "--request-id",
+            "private-id",
+            "--telemetry",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["status"] == "completed"
+    events = [json.loads(line) for line in result.stderr.splitlines()]
+    assert [event["phase"] for event in events] == ["started", "finished"]
+    assert "do-not-log" not in result.stderr and "private-id" not in result.stderr
+
+
+def test_cli_rejects_invalid_input_and_settings(tmp_path):
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("{")
+    oversized = tmp_path / "oversized.json"
+    oversized.write_bytes(b"x" * 1_048_577)
+    for args in [
+        ["--input-file", str(invalid)],
+        ["--input-file", str(oversized)],
+        ["--input-file", str(tmp_path / "missing")],
+        ["--timeout", "0"],
+    ]:
+        result = subprocess.run(
+            [sys.executable, "-m", "agent_tdd", "run", "workflow", *args],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 2
+        assert "invalid run configuration" in result.stderr
+
+
+def test_metadata_mode_excludes_full_result():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent_tdd",
+            "run",
+            "workflow",
+            "--result-mode",
+            "metadata",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == {"status": "completed", "model_calls": 2}
+
+
+def test_host_cli_redacts_unexpected_exception(monkeypatch, capsys):
+    from agent_tdd.cli import main
+    from agent_tdd.runtime import ExecutionService
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("private provider response")
+
+    monkeypatch.setattr(ExecutionService, "run", fail)
+    monkeypatch.setattr(sys, "argv", ["agent-tdd", "run", "workflow"])
+    assert main() == 1
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["status"] == "execution_error"
+    assert "private" not in captured.out + captured.err
