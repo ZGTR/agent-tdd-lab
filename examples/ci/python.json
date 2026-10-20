@@ -1,0 +1,5 @@
+{
+  "command": ["python", "examples/ci/echo.py"],
+  "suite_kind": "scripted",
+  "adapter_version": "echo-wiring-v1"
+}

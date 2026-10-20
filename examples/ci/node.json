@@ -1,0 +1,5 @@
+{
+  "command": ["node", "examples/ci/echo.mjs"],
+  "suite_kind": "scripted",
+  "adapter_version": "echo-wiring-v1"
+}

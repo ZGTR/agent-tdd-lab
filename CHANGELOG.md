@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+
+- Add a reusable GitHub composite action and a CLI command-adapter path for existing agents, harnesses and multi-agent workflows in any language.
+- Keep LangGraph, Pi, Strands and other application runtimes in the consuming repository; pass only task, attempt identity and execution limits over a versioned JSON protocol.
+- Add a Python worker helper, offline Python/Node wiring examples and CI checks proving both a passing gate and a deliberately blocked release.
+- Reject malformed/oversized adapter results, nonzero exits, timeouts, incompatible baselines and reported request-accounting failures without logging raw adapter output.
+- Document installation, consumer-owned dependencies and cases, reports, branch protection, custom graders and framework-specific adapter responsibilities.
+
 ## 1.2.0
 
 - Add a framework-neutral evaluation service, strict versioned cases, injected executors/graders, repeat/split selection and baseline comparison before dispatch.

@@ -14,7 +14,8 @@ from typing import Any
 from agent_tdd.adapters.local import SystemClock
 from agent_tdd.adapters.providers import PROTOCOL, BedrockModel, OpenAIModel, ProviderSettings
 from agent_tdd.evaluation.cases import fingerprint, load_suite, read_object
-from agent_tdd.evaluation.contracts import Gates
+from agent_tdd.evaluation.command import CommandExecutor, CommandSettings
+from agent_tdd.evaluation.contracts import Executor, Gates
 from agent_tdd.evaluation.executors import AgentExecutor, ScriptedEvaluationModel
 from agent_tdd.evaluation.graders import ExactGrader
 from agent_tdd.evaluation.reports import prepare_reports, write_reports
@@ -25,7 +26,11 @@ from agent_tdd.runtime import RunSettings
 def add_parser(sub: Any) -> None:
     parser = sub.add_parser("evaluate", help="versioned cases, provider adapters and release gates")
     parser.add_argument("--cases", type=Path, required=True)
-    parser.add_argument("--provider", choices=["scripted", "openai", "bedrock"], default="scripted")
+    execution = parser.add_mutually_exclusive_group()
+    execution.add_argument("--provider", choices=["scripted", "openai", "bedrock"])
+    execution.add_argument(
+        "--executor-config", type=Path, help="trusted command adapter JSON for any harness/language"
+    )
     parser.add_argument("--config", type=Path)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--split", choices=["dev", "release"], default="release")
@@ -68,7 +73,11 @@ def run(args: argparse.Namespace) -> int:
     try:
         if args.report.suffix != ".json":
             raise ValueError("report path must end in .json")
-        inputs = [path for path in (args.cases, args.config, args.baseline) if path is not None]
+        inputs = [
+            path
+            for path in (args.cases, args.config, args.baseline, args.executor_config)
+            if path is not None
+        ]
         outputs = {
             args.report.with_suffix(suffix).resolve() for suffix in (".json", ".html", ".xml")
         }
@@ -85,18 +94,31 @@ def run(args: argparse.Namespace) -> int:
         )
         settings = RunSettings(args.max_model_calls, args.timeout)
         clock = SystemClock()
+        provider_name = args.provider or "scripted"
+        if args.executor_config is not None and args.config is not None:
+            raise ValueError("provider config and executor config cannot be combined")
         config = read_object(args.config) if args.config else {}
         provenance = {
-            "provider": args.provider,
+            "provider": "command" if args.executor_config else provider_name,
             "package_version": importlib.metadata.version("agent-tdd-lab"),
         }
         revision, state = _revision(args.revision)
         provenance.update(
             revision=revision,
             revision_state=state,
-            suite_kind="scripted" if args.provider == "scripted" else "live",
+            suite_kind="scripted" if provider_name == "scripted" else "live",
         )
-        if args.provider == "scripted":
+        executor: Executor
+        if args.executor_config is not None:
+            command_config = read_object(args.executor_config)
+            command = CommandSettings.from_config(command_config)
+            executor = CommandExecutor(command, settings)
+            provenance.update(
+                suite_kind=command.suite_kind,
+                adapter_version=command.adapter_version,
+                executor_config_sha256=fingerprint(command_config),
+            )
+        elif provider_name == "scripted":
             if config:
                 raise ValueError("scripted provider does not accept provider configuration")
             selected = [case for case in suite.cases if case.split == args.split]
@@ -105,7 +127,7 @@ def run(args: argparse.Namespace) -> int:
             executor = AgentExecutor(ScriptedEvaluationModel, clock, settings=settings)
             provenance.update(model="scripted", prompt_sha256="none", config_sha256="none")
         else:
-            required = {"model", "prompt", "endpoint" if args.provider == "openai" else "region"}
+            required = {"model", "prompt", "endpoint" if provider_name == "openai" else "region"}
             allowed = required | {
                 "max_output_tokens",
                 "max_input_bytes",
@@ -124,7 +146,7 @@ def run(args: argparse.Namespace) -> int:
                 prompt_sha256=fingerprint(provider.prompt),
                 config_sha256=fingerprint(config),
             )
-            if args.provider == "openai":
+            if provider_name == "openai":
                 endpoint = config["endpoint"]
                 key = os.environ.get("OPENAI_API_KEY", "")
                 # Validate before any cases run; credentials remain only in memory.
@@ -141,8 +163,12 @@ def run(args: argparse.Namespace) -> int:
                 executor = AgentExecutor(
                     lambda case: BedrockModel(provider, region=region), clock, settings=settings
                 )
-        provenance["protocol_sha256"] = fingerprint(PROTOCOL)
-        provenance["tool_schema_sha256"] = fingerprint({})
+        provenance["protocol_sha256"] = (
+            fingerprint("command-v1") if args.executor_config else fingerprint(PROTOCOL)
+        )
+        provenance["tool_schema_sha256"] = (
+            "application-owned" if args.executor_config else fingerprint({})
+        )
         lock = Path("uv.lock")
         provenance["dependency_lock_sha256"] = (
             hashlib.sha256(lock.read_bytes()).hexdigest() if lock.is_file() else "unknown"

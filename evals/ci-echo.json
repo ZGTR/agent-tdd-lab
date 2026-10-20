@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "name": "ci-protocol-wiring",
+  "version": "1",
+  "cases": [
+    {
+      "id": "dev-object",
+      "split": "dev",
+      "task": {"message": "example"},
+      "expected": {"status": "completed", "output": {"message": "example"}}
+    },
+    {
+      "id": "release-object",
+      "split": "release",
+      "task": {"message": "hello"},
+      "expected": {"status": "completed", "output": {"message": "hello"}}
+    },
+    {
+      "id": "release-array",
+      "split": "release",
+      "task": ["one", "two"],
+      "expected": {"status": "completed", "output": ["one", "two"]}
+    }
+  ]
+}
