@@ -228,7 +228,7 @@ The parent discards stderr and never prints raw output or adapter exception text
 
 ### GitHub Actions
 
-Install your app's dependencies before the action, using your normal lockfile workflow (`npm ci`, `uv sync --frozen`, etc.). If your Python dependencies are in a virtualenv, ensure its interpreter is on `PATH` for the gate and command adapter. The action installs its own standard-library-only package from the action's checked-out source; it does not install your agent SDK or configure AWS/model credentials.
+Install your app's dependencies before the action, using your normal lockfile workflow (`npm ci`, `uv sync --frozen`, etc.). If your Python dependencies are in a virtualenv, ensure its interpreter is on `PATH` for the gate and command adapter. The action bootstraps pip with Python's bundled `ensurepip` when missing (including a default uv virtualenv), then installs its standard-library-only package from the action's checked-out source. It does not install your agent SDK or configure AWS/model credentials.
 
 ```yaml
 name: Agent gate
