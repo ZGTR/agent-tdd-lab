@@ -359,3 +359,22 @@ raise SystemExit(serve(execute))
         text=True,
     )
     assert huge.returncode == 2
+
+
+@pytest.mark.parametrize(
+    "task", ["مرحبا", {"键": "value"}, ["😀", 123]], ids=["string", "object", "array"]
+)
+def test_command_worker_protocol_uses_utf8_on_every_platform(tmp_path, task):
+    command = child(
+        tmp_path,
+        "from agent_tdd.evaluation.worker import serve\n"
+        "from agent_tdd.evaluation.contracts import Sample, Usage\n"
+        "from agent_tdd.types import RunResult, Status\n"
+        "def execute(request):\n"
+        "    return Sample(RunResult(Status.COMPLETED, request.task), Usage(0, 0, 0, 0))\n"
+        "raise SystemExit(serve(execute))\n",
+    )
+    sample = CommandExecutor(command, RunSettings(2, 5)).run(
+        Case("unicode", "release", task, {}), request_id="r", max_requests=2
+    )
+    assert sample.result.output == task

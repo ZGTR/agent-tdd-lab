@@ -59,7 +59,10 @@ def serve(handler: Callable[[Invocation], Sample]) -> int:
     try:
         sample = handler(invocation)
         response = {"schema_version": 1, **asdict(sample)}
-        print(json.dumps(response, ensure_ascii=False, allow_nan=False))
+        sys.stdout.buffer.write(
+            json.dumps(response, ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
+        )
+        sys.stdout.buffer.flush()
         return 0
     except Exception:
         # Never echo vendor exceptions, task data or credentials into shared logs.

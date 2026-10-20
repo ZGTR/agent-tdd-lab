@@ -3,7 +3,7 @@
 import json
 import sys
 
-request = json.load(sys.stdin)
+request = json.loads(sys.stdin.buffer.read())
 assert request["schema_version"] == 1
 print(
     json.dumps(
