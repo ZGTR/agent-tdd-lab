@@ -2,6 +2,8 @@
 
 The stable API is deliberately small. The core only imports the Python standard library. An adapter chooses whether this library owns the loop (`Model` + `Tool`) or your existing framework owns it (`Step`). Keep SDK dependencies in your application, lock their versions, and test their provider contracts separately.
 
+For CI/CD use without adopting the runtime, use the [command adapter or Python Executor integration](ci-integration.md). Pi and other non-Python harnesses use the same versioned command protocol.
+
 ## Model port: use the generic loop
 
 Implement `decide(task, history, *, timeout_seconds) -> Decision`.

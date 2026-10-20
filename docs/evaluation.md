@@ -2,6 +2,8 @@
 
 The repository supplies an executable evaluation runner, OpenAI-compatible HTTP and AWS Bedrock Converse model adapters, deterministic code graders, JSON/HTML/JUnit reports, and a trusted manual CI workflow. It evaluates the same generic `Agent` port used by the offline harness; applications with another agent, workflow, or harness implement the small `Executor` contract instead. No hosted evaluation platform is required.
 
+For an existing LangGraph, Pi, Strands or other harness, see [CI/CD integration](ci-integration.md): the reusable GitHub Action, `--executor-config` command bridge and Python worker helper keep your application runtime intact.
+
 ## Run without credentials
 
 ```bash

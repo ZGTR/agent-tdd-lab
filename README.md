@@ -2,9 +2,103 @@
 
 [![CI](https://github.com/ZGTR/agent-tdd-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ZGTR/agent-tdd-lab/actions/workflows/ci.yml)
 
-A framework-independent Python reference for testing agents, harnesses, tools, and multi-agent workflows. Clone it, run it without credentials, and replace the model/tool adapters for your application.
+A reusable CI/CD quality gate for agents, harnesses, tools, and multi-agent workflows. Keep your existing **LangGraph, Pi (badlogic/pi-mono), AWS Strands, or custom runtime**. Call this repository from your pipeline to run cases, apply release gates, and collect JSON/HTML/JUnit reports. The included Python agent runtime is optional.
 
 **Status:** production-oriented reference implementation with a tested local SQLite effect simulator. It does not send money, authenticate HTTP callers, guarantee model quality, or provide a distributed agent runtime. Read [production integration requirements](docs/production.md) before enabling external effects.
+
+## Use it in your application's CI/CD
+
+**Yes: another repository can reference this repository as a GitHub Action, install its Python package, or invoke its CLI from any CI runner.** You provide application cases and a small adapter; you do not migrate your agent runtime.
+
+```mermaid
+flowchart LR
+    subgraph APP[Your application repository]
+        C[Versioned cases and expected results]
+        A[Application adapter]
+        H[LangGraph / Pi / Strands / multi-agent workflow]
+        A --> H
+        H --> A
+    end
+    subgraph LAB[Agent TDD Lab]
+        G[CI gate: action / CLI / Python API]
+        V[Graders and release checks]
+        R[JSON / HTML / JUnit reports]
+        G --> V --> R
+    end
+    C --> G
+    G -->|Task and execution limits| A
+    A -->|Normalized result and measured usage| G
+    V --> P{Pass?}
+    P -->|Yes| D[Your existing release or deployment job]
+    P -->|No| B[Block the dependent job]
+```
+
+The gate covers the cases and invocations your pipeline selects. Runtime enforcement, SDK retries, tool authorization and measurements belong at the actual application boundaries. Linking the repository does not automatically instrument every production agent call.
+
+### GitHub Actions: reference this repository
+
+Add these steps **after your normal application checkout, runtime setup and locked dependency installation**. The gate needs Python 3.11–3.13; Pi also needs the Node/Bun version and SDK dependencies your application uses.
+
+```yaml
+- uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+  with:
+    python-version: '3.12'
+- name: Gate my existing agent system
+  uses: ZGTR/agent-tdd-lab@v1.3.0 # Pin the reviewed release's full commit SHA in protected pipelines.
+  with:
+    cases: evals/agent.json
+    executor-config: ci/agent.json
+    report: artifacts/agent-gate.json
+    repeats: '3'
+    max-requests: '100'
+    max-model-calls: '8'
+    timeout: '30'
+- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+  if: always()
+  with:
+    name: agent-evaluation
+    path: artifacts/agent-gate.*
+```
+
+`ci/agent.json` is a trusted file in **your repository**:
+
+```json
+{
+  "command": ["node", "ci/pi-adapter.mjs"],
+  "suite_kind": "live",
+  "adapter_version": "my-pi-adapter-v1"
+}
+```
+
+For Python, use `"command": ["python", "ci/agent_adapter.py"]`. Use `"scripted"` for offline/fake-model tests and `"live"` only for actual model runs. The adapter reads one JSON request from stdin and returns one normalized result/usage envelope on stdout. Pi's raw JSONL event stream needs normalization. [The integration guide](docs/ci-integration.md) defines the protocol and shows Python/Pi templates, framework seams, other CI providers and baseline comparisons.
+
+A failed gate exits nonzero and fails the action step. **Make your release/deployment job depend on the gate job with `needs: agent-gate`**, and require the gate status in branch protection. Artifact upload does not enforce a release gate by itself. Keep credential-bearing model evaluations in trusted, protected jobs; run offline contracts on untrusted pull requests.
+
+### Try the pipeline bridge offline
+
+After cloning and installing below, run these without credentials, cloud resources or framework SDKs:
+
+```bash
+agent-tdd evaluate --cases evals/ci-echo.json \
+  --executor-config examples/ci/python.json --report artifacts/python-gate.json
+# Node.js is required for this second fixture.
+agent-tdd evaluate --cases evals/ci-echo.json \
+  --executor-config examples/ci/node.json --report artifacts/node-gate.json
+```
+
+These echo fixtures test the cross-process integration and reports. They do not run LangGraph, Pi, Strands, or measure model quality. Our [consumer-action CI job](.github/workflows/ci.yml) runs both fixtures through the public action and verifies that a deliberately wrong expectation fails its step.
+
+### Choose the integration boundary
+
+| Your system | How to connect it | What you keep |
+| --- | --- | --- |
+| LangGraph | Python `Executor`, or command adapter wrapping your compiled graph | Graph nodes, checkpointers, model callbacks and tools |
+| Pi (`badlogic/pi-mono`) | Node/Bun adapter around your Pi SDK session; emit the normalized JSON envelope | Pi session, selected model, tool configuration and application policies |
+| AWS Strands | Python `Executor`, or command adapter around your configured Strands agent/workflow | Strands model, tools, multi-agent orchestration and IAM configuration |
+| Any other framework or language | Python `Executor` or a trusted executable implementing the command protocol | Your complete harness/runtime |
+| Existing Python evaluation code | Import `evaluate(...)`, inject your `Executor` and `Grader` | Your orchestration and CI runner; no subprocess bridge is required |
+
+The stock CLI uses exact code grading for structured outcomes and observed policy violations. Semantic tasks can inject a versioned Python `Grader`. An external adapter must account for every child-agent/model request, enforce the supplied allowance, and expose tool observations needed by your policies; the gate cannot see hidden framework activity.
 
 ## Clone and run
 
@@ -143,6 +237,7 @@ Outbox dispatch is **at least once**. An event may be delivered again after a su
 
 ## Documentation
 
+- [Integrating your existing agent into CI/CD](docs/ci-integration.md)
 - [Extension architecture](docs/architecture.md)
 - [Deployment, IaC, and operations](docs/deployment.md)
 - [Initial verification record](docs/validation.md)

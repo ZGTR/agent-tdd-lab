@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-tdd-lab"
-version = "1.2.0"
-description = "Offline agent TDD reference: bounded harness, DI, durable SQLite effects and outbox."
+version = "1.3.0"
+description = "Framework-independent agent CI gates, evaluation reports, and test-first runtime examples."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

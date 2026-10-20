@@ -1,0 +1,77 @@
+name: Agent TDD gate
+description: Gate an existing agent, harness or multi-agent workflow using a trusted command adapter.
+author: ZGTR
+branding:
+  icon: check-circle
+  color: blue
+inputs:
+  cases:
+    description: Caller-owned versioned JSON cases
+    required: true
+  executor-config:
+    description: Caller-owned trusted command adapter JSON
+    required: true
+  report:
+    description: JSON report path (also writes HTML and JUnit siblings)
+    default: artifacts/agent-gate.json
+  baseline:
+    description: Optional trusted compatible passing baseline JSON
+    default: ''
+  split:
+    description: Case split (dev or release)
+    default: release
+  repeats:
+    description: Repetitions per case
+    default: '1'
+  revision:
+    description: Application revision (inferred from caller Git checkout by default)
+    default: ''
+  max-requests:
+    description: Global reported model-request allowance
+    default: '100'
+  max-model-calls:
+    description: Per-attempt request allowance passed to the adapter
+    default: '8'
+  timeout:
+    description: Adapter subprocess timeout in seconds
+    default: '30'
+  max-latency:
+    description: Maximum elapsed seconds per attempt
+    default: '60'
+  min-pass-rate:
+    description: Required quality pass rate
+    default: '1'
+  max-regression:
+    description: Allowed pass-rate regression against baseline
+    default: '0'
+  max-total-tokens:
+    description: Optional measured token gate (checked after each run)
+    default: ''
+  max-estimated-cost-usd:
+    description: Optional measured cost gate (checked after each run)
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install the pinned action's Python gate
+      shell: bash
+      run: python -m pip install --disable-pip-version-check --no-deps "$GITHUB_ACTION_PATH"
+    - name: Evaluate the caller's agent system
+      shell: bash
+      env:
+        GATE_CASES: ${{ inputs.cases }}
+        GATE_EXECUTOR_CONFIG: ${{ inputs.executor-config }}
+        GATE_REPORT: ${{ inputs.report }}
+        GATE_BASELINE: ${{ inputs.baseline }}
+        GATE_SPLIT: ${{ inputs.split }}
+        GATE_REPEATS: ${{ inputs.repeats }}
+        GATE_REVISION: ${{ inputs.revision }}
+        GATE_MAX_REQUESTS: ${{ inputs.max-requests }}
+        GATE_MAX_MODEL_CALLS: ${{ inputs.max-model-calls }}
+        GATE_TIMEOUT: ${{ inputs.timeout }}
+        GATE_MAX_LATENCY: ${{ inputs.max-latency }}
+        GATE_MIN_PASS_RATE: ${{ inputs.min-pass-rate }}
+        GATE_MAX_REGRESSION: ${{ inputs.max-regression }}
+        GATE_MAX_TOTAL_TOKENS: ${{ inputs.max-total-tokens }}
+        GATE_MAX_ESTIMATED_COST_USD: ${{ inputs.max-estimated-cost-usd }}
+      run: python "$GITHUB_ACTION_PATH/scripts/run_ci_gate.py"

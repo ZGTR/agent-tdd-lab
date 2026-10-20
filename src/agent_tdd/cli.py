@@ -21,7 +21,9 @@ from agent_tdd.views import render_event, render_result, render_summary
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Offline agent TDD reference examples")
+    parser = argparse.ArgumentParser(
+        description="Framework-independent agent CI gates and examples"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     evaluation_cli.add_parser(sub)
     refund = sub.add_parser("refund", help="local SQLite refund simulator; never sends money")
